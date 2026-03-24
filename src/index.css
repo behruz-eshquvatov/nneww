@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  --color-bg: #f4f5f6;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8f9fa;
+  --color-border: #d7dde3;
+  --color-text: #1a232c;
+  --color-text-soft: #5c6976;
+  --color-accent: #0f766e;
+  --color-accent-soft: #d6f2ef;
+  --color-accent-contrast: #f8fffe;
+  --color-danger: #b42318;
+  --color-danger-soft: #fee4e2;
+  --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --radius-card: 1.5rem;
+}
+
+@theme inline {
+  --font-sans: 'Manrope', sans-serif;
+  --color-app-bg: var(--color-bg);
+  --color-app-surface: var(--color-surface);
+  --color-app-surface-muted: var(--color-surface-muted);
+  --color-app-border: var(--color-border);
+  --color-app-text: var(--color-text);
+  --color-app-text-soft: var(--color-text-soft);
+  --color-app-accent: var(--color-accent);
+  --color-app-accent-soft: var(--color-accent-soft);
+  --color-app-accent-contrast: var(--color-accent-contrast);
+  --color-app-danger: var(--color-danger);
+  --color-app-danger-soft: var(--color-danger-soft);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Manrope', sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+.card-radius {
+  border-radius: var(--radius-card);
+}
