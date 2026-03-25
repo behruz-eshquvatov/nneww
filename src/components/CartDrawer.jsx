@@ -1,4 +1,4 @@
-import { NotebookText, Pencil, Phone, ShoppingCart, Trash2, User, X } from 'lucide-react'
+import { NotebookText, Phone, ShoppingCart, Trash2, User, X } from 'lucide-react'
 import { formatCount, formatPrice } from '../lib/format'
 
 const CartDrawer = ({
@@ -7,8 +7,9 @@ const CartDrawer = ({
   customerForm,
   isSubmitting,
   onClose,
-  onEditItem,
+  onAdjustItemQuantity,
   onRemoveItem,
+  onUpdateItemQuantity,
   onFieldChange,
   onSubmit,
 }) => {
@@ -52,7 +53,7 @@ const CartDrawer = ({
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
             {cart.length === 0 ? (
-              <div className="card-radius flex h-full min-h-56 flex-col items-center justify-center border border-dashed border-app-border bg-app-surface-muted p-6 text-center">
+              <div className="card-radius flex h-fit min-h-56 flex-col items-center justify-center border border-dashed border-app-border bg-app-surface-muted p-6 text-center">
                 <ShoppingCart size={28} className="text-app-text-soft" />
                 <p className="mt-3 text-lg font-bold text-app-text">Savat bo&apos;sh</p>
                 <p className="mt-2 text-sm text-app-text-soft">
@@ -81,22 +82,49 @@ const CartDrawer = ({
                         {item.quantity} x {formatPrice(item.price)}
                       </p>
 
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-6 gap-2">
                         <button
                           type="button"
-                          onClick={() => onEditItem(item)}
-                          className="inline-flex items-center gap-2 rounded-xl border border-app-border px-3 py-2 text-xs font-semibold text-app-text"
+                          onClick={() => onAdjustItemQuantity(item, -5)}
+                          className="rounded-xl border border-app-border bg-app-surface px-2 py-2 text-xs font-semibold text-app-text"
                         >
-                          <Pencil size={14} />
-                          <span>O&apos;zgartirish</span>
+                          -5
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onAdjustItemQuantity(item, -1)}
+                          className="rounded-xl border border-app-border bg-app-surface px-2 py-2 text-xs font-semibold text-app-text"
+                        >
+                          -1
+                        </button>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(event) => onUpdateItemQuantity(item, event.target.value)}
+                          className="rounded-xl border border-app-border bg-app-surface px-2 py-2 text-center text-sm font-bold text-app-text"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => onAdjustItemQuantity(item, 1)}
+                          className="rounded-xl border border-app-border bg-app-surface px-2 py-2 text-xs font-semibold text-app-text"
+                        >
+                          +1
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onAdjustItemQuantity(item, 5)}
+                          className="rounded-xl border border-app-border bg-app-surface px-2 py-2 text-xs font-semibold text-app-text"
+                        >
+                          +5
                         </button>
                         <button
                           type="button"
                           onClick={() => onRemoveItem(item.id)}
-                          className="inline-flex items-center gap-2 rounded-xl bg-app-danger-soft px-3 py-2 text-xs font-semibold text-app-danger"
+                          className="inline-flex items-center justify-center rounded-xl bg-app-danger-soft px-2 py-2 text-xs font-semibold text-app-danger"
                         >
                           <Trash2 size={14} />
-                          <span>Olib tashlash</span>
                         </button>
                       </div>
                     </div>

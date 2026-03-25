@@ -10,10 +10,15 @@ import {
 export const DEFAULT_PRODUCT_IMAGE =
   'https://cdn.thewirecutter.com/wp-content/media/2026/03/BG-IPHONE-5323.jpg?width=2048&quality=60&crop=2048:1365&auto=webp'
 
-const fallbackCategories = ['Smartphones', 'Accessories', 'Gadgets']
+const fallbackCategories = [
+  { category: 'Smartphones', subCategory: 'Flagship' },
+  { category: 'Accessories', subCategory: 'Cases' },
+  { category: 'Gadgets', subCategory: 'Wearables' },
+]
 
 const sampleProducts = Array.from({ length: 20 }, (_, index) => {
   const itemNumber = String(index + 1).padStart(2, '0')
+  const fallbackCategory = fallbackCategories[index % fallbackCategories.length]
 
   return {
     id: `demo-${itemNumber}`,
@@ -23,7 +28,8 @@ const sampleProducts = Array.from({ length: 20 }, (_, index) => {
     barcode: '1234567890123',
     price: 14999000,
     image: DEFAULT_PRODUCT_IMAGE,
-    category: fallbackCategories[index % fallbackCategories.length],
+    category: fallbackCategory.category,
+    subCategory: fallbackCategory.subCategory,
     isActive: true,
     entity: {
       CS_id: `demo_${itemNumber}`,
@@ -246,23 +252,28 @@ export const loadCatalog = async () => {
   return (productResult.product || [])
     .filter((product) => product.active === 'Y' || product.active === true)
     .map((product, index) => {
+      const fallbackCategory = fallbackCategories[index % fallbackCategories.length]
       const entity = {
         CS_id: product.CS_id || '',
         SD_id: product.SD_id || '',
         code_1C: product.code_1C || '',
       }
 
-      const resolvedCategory =
+      const resolvedSubCategory =
         subCategoryMap.get(String(product.subCategory?.SD_id || '')) ||
         subCategoryMap.get(String(product.subCategory?.code_1C || '')) ||
         subCategoryMap.get(String(product.subCategory?.CS_id || '')) ||
+        product.subCategory?.name ||
+        ''
+
+      const resolvedCategory =
         productGroupMap.get(String(product.productGroup?.SD_id || '')) ||
         productGroupMap.get(String(product.productGroup?.code_1C || '')) ||
         productGroupMap.get(String(product.productGroup?.CS_id || '')) ||
         product.category?.name ||
-        product.subCategory?.name ||
         product.brand?.name ||
-        fallbackCategories[index % fallbackCategories.length]
+        resolvedSubCategory ||
+        fallbackCategory.category
 
       return {
         id: buildEntityKey(entity),
@@ -276,6 +287,10 @@ export const loadCatalog = async () => {
         price: priceMap.get(buildEntityKey(entity)) ?? 0,
         image: DEFAULT_PRODUCT_IMAGE,
         category: resolvedCategory,
+        subCategory:
+          resolvedSubCategory && resolvedSubCategory !== resolvedCategory
+            ? resolvedSubCategory
+            : '',
         isActive: product.active === 'Y' || product.active === true,
         entity,
       }
