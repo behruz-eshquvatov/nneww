@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import CartDrawer from '../components/CartDrawer'
 import Pagination from '../components/Pagination'
-import ProductCard from '../components/ProductCard'
+import ProductCard, { ProductCardSkeleton } from '../components/ProductCard'
 import StoreHeader, {
   ALL_CATEGORIES,
   ALL_SUBCATEGORIES,
@@ -42,6 +42,23 @@ const EmptyGrid = ({ searchTerm }) => (
         : "Hozircha ko'rsatish uchun mahsulot yo'q."}
     </p>
   </div>
+)
+
+const LoadingGrid = () => (
+  <>
+    <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
+        <ProductCardSkeleton key={`loading-card-${index}`} />
+      ))}
+    </div>
+
+    <div className="mt-4 shrink-0">
+      <div
+        className="card-radius h-12 animate-pulse border border-app-border bg-app-surface-muted/80"
+        aria-hidden="true"
+      />
+    </div>
+  </>
 )
 
 const StorePage = () => {
@@ -317,7 +334,9 @@ const StorePage = () => {
           )}
         </div>
 
-        {filteredProducts.length === 0 ? (
+        {isProductsLoading ? (
+          <LoadingGrid />
+        ) : filteredProducts.length === 0 ? (
           <EmptyGrid searchTerm={search} />
         ) : (
           <>

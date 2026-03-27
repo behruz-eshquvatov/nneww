@@ -11,6 +11,36 @@ const clampQuantity = (value) => {
   return parsed
 }
 
+export const ProductCardSkeleton = () => (
+  <article
+    className="card-radius max-w-125 mx-auto flex h-full w-full animate-pulse flex-col overflow-hidden border border-app-border bg-app-surface shadow-soft"
+    aria-hidden="true"
+  >
+    <div className="relative w-full aspect-square overflow-hidden bg-app-surface-muted sm:h-56 md:h-64">
+      <div className="absolute top-3 right-3 h-7 w-24 rounded-full bg-white/70" />
+    </div>
+
+    <div className="flex flex-1 flex-col p-3 md:p-4">
+      <div className="min-h-0 flex-1">
+        <div className="mt-3 h-5 w-4/5 rounded-full bg-app-surface-muted" />
+        <div className="mt-2 h-5 w-3/5 rounded-full bg-app-surface-muted" />
+
+        <div className="mt-4 flex items-center gap-2">
+          <div className="h-4 w-4 rounded-full bg-app-surface-muted" />
+          <div className="h-4 w-2/3 rounded-full bg-app-surface-muted" />
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <div className="h-4 w-12 rounded-full bg-app-surface-muted" />
+        <div className="mt-2 h-6 w-28 rounded-full bg-app-surface-muted" />
+      </div>
+
+      <div className="mt-4 h-12 rounded-2xl bg-app-surface-muted" />
+    </div>
+  </article>
+)
+
 const ProductCard = ({
   product,
   quantityInCart,
@@ -24,18 +54,15 @@ const ProductCard = ({
   onRemoveFromCart,
 }) => {
   const parsedQuantity = clampQuantity(editorQuantity)
-  const hasStockInfo = Number.isFinite(product.stockLevel)
-  const stockLevel = hasStockInfo ? Math.max(0, product.stockLevel) : 0
-  const stockTone =
-    stockLevel > 10
-      ? 'bg-app-accent-soft text-app-text'
-      : stockLevel > 0
-        ? 'bg-amber-100 text-amber-800'
-        : 'bg-app-danger-soft text-app-danger'
-
   return (
     <article className="card-radius max-w-125 mx-auto flex h-full w-full flex-col overflow-hidden border border-app-border bg-app-surface shadow-soft">
-      <div className="w-full aspect-square overflow-hidden bg-app-surface-muted sm:h-56 md:h-64">
+      <div className="relative w-full aspect-square overflow-hidden bg-app-surface-muted">
+        {product.packQuantity > 0 && !isEditorOpen && (
+          <span className="absolute top-3 right-3 z-10 rounded-full bg-app-surface/95 px-3 py-1 text-xs font-semibold text-app-text shadow-sm backdrop-blur">
+            Qadoq: {product.packQuantity} ta
+          </span>
+        )}
+
         {product.image ? (
           <img
             src={product.image}
@@ -61,15 +88,6 @@ const ProductCard = ({
               <div className="mt-3 flex items-center gap-2 text-xs text-app-text-soft">
                 <Barcode size={14} strokeWidth={2} />
                 <span className="truncate">{product.barcode || product.code}</span>
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-
-                {product.packQuantity > 0 && (
-                  <span className="rounded-full bg-app-surface-muted px-3 py-1 font-semibold text-app-text-soft">
-                    Qadoq: {product.packQuantity} ta
-                  </span>
-                )}
               </div>
             </>
           )}
