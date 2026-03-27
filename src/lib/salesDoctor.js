@@ -1,6 +1,8 @@
-import { apiConfig, appConfig } from './env'
+import { apiConfig } from './env'
 
-const apiBase = `/${apiConfig.proxyPrefix}`
+const apiBase = apiConfig.baseUrl
+  ? `${apiConfig.baseUrl}/api`
+  : '/api'
 
 const compactObject = (value) =>
   Object.fromEntries(
@@ -10,6 +12,10 @@ const compactObject = (value) =>
 const parseJsonResponse = async (response, fallbackMessage) => {
   const payload = await response.json().catch(() => null)
 
+  if (payload == null) {
+    throw new Error('Server JSON javob qaytarmadi.')
+  }
+
   if (!response.ok) {
     throw new Error(payload?.error || fallbackMessage)
   }
@@ -17,18 +23,21 @@ const parseJsonResponse = async (response, fallbackMessage) => {
   return payload
 }
 
-export const loadCatalog = async () => {
-  const response = await fetch(`${apiBase}/catalog`)
+const buildStoreUrl = (dealerId, resource) =>
+  `${apiBase}/store/${encodeURIComponent(dealerId)}/${resource}`
+
+export const loadProducts = async (dealerId) => {
+  const response = await fetch(buildStoreUrl(dealerId, 'products'))
   const payload = await parseJsonResponse(
     response,
-    'Katalogni yuklashda xatolik yuz berdi.',
+    'Mahsulotlarni yuklashda xatolik yuz berdi.',
   )
 
   return Array.isArray(payload.products) ? payload.products : []
 }
 
-export const loadCategories = async () => {
-  const response = await fetch(`${apiBase}/categories`)
+export const loadCategories = async (dealerId) => {
+  const response = await fetch(buildStoreUrl(dealerId, 'categories'))
   const payload = await parseJsonResponse(
     response,
     'Kategoriyalarni yuklashda xatolik yuz berdi.',
@@ -37,8 +46,8 @@ export const loadCategories = async () => {
   return Array.isArray(payload.categories) ? payload.categories : []
 }
 
-export const loadSubCategories = async () => {
-  const response = await fetch(`${apiBase}/subcategories`)
+export const loadSubCategories = async (dealerId) => {
+  const response = await fetch(buildStoreUrl(dealerId, 'subcategories'))
   const payload = await parseJsonResponse(
     response,
     'Subkategoriyalarni yuklashda xatolik yuz berdi.',
@@ -85,12 +94,22 @@ const createOrderCode = () => {
   return `WEB-${stamp}-${randomPart}`
 }
 
-export const submitOrder = async ({ cart, customerName, customerPhone, note }) => {
+export const submitOrder = async ({
+  dealerId,
+  cart,
+  customerName,
+  customerPhone,
+  note,
+}) => {
   if (!cart.length) {
     throw new Error("Savatingiz hozircha bo'sh.")
   }
 
-  const response = await fetch(`${apiBase}/orders`, {
+  if (!dealerId) {
+    throw new Error('Dealer ID topilmadi.')
+  }
+
+  const response = await fetch(buildStoreUrl(dealerId, 'orders'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -106,14 +125,10 @@ export const submitOrder = async ({ cart, customerName, customerPhone, note }) =
       clientMeta: {
         code: createOrderCode(),
         comment: buildComment({ customerName, customerPhone, note, cart }),
+        dealerId,
       },
     }),
   })
 
   return parseJsonResponse(response, 'Buyurtmani yuborishda xatolik yuz berdi.')
 }
-
-export const getFallbackCatalog = () => ({
-  products: [],
-  message: `${appConfig.title} katalogi hozircha mavjud emas.`,
-})

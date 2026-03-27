@@ -6,6 +6,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<StorePage />} />
+      <Route path="/:dealerId/*" element={<StorePage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )

@@ -5,14 +5,6 @@ import { formatCount } from '../lib/format'
 export const ALL_CATEGORIES = 'All'
 export const ALL_SUBCATEGORIES = 'All'
 
-const normalizeApiUrl = (value) => {
-  if (!value) {
-    return ''
-  }
-
-  return value.endsWith('/') ? value : `${value}/`
-}
-
 const FALLBACK_CATEGORY_TREE = [
   {
     name: 'Smartphones',
@@ -27,165 +19,6 @@ const FALLBACK_CATEGORY_TREE = [
     count: 0,
   },
 ]
-
-const apiUrl = normalizeApiUrl('https://villobuhara.salesdoc.io/api/v2/')
-const filialIdRaw = 0
-const login = 'villobuhara'
-const password = 'vilo3878'
-const userId = 'd0_67'
-const token = ''
-
-const hasLoginAuth = Boolean(login && password)
-const hasDirectAuth = Boolean(userId && token)
-let authSession = hasDirectAuth ? { userId, token } : null
-
-const ensureConfigured = () => {
-  if (!apiUrl) {
-    throw new Error('Sales Doctor API URL is missing.')
-  }
-
-  if (!hasLoginAuth && !hasDirectAuth) {
-    throw new Error('Sales Doctor auth is missing.')
-  }
-}
-
-const getFilialPayload = () => {
-  if (!filialIdRaw) {
-    return null
-  }
-
-  const normalizedFilialId = Number.isNaN(Number(filialIdRaw))
-    ? filialIdRaw
-    : Number(filialIdRaw)
-
-  return {
-    filial_id: normalizedFilialId,
-  }
-}
-
-const extractAuth = (value) => {
-  if (!value || typeof value !== 'object') {
-    return null
-  }
-
-  const nextUserId =
-    value.userId ||
-    value.user_id ||
-    value.userid ||
-    value.id ||
-    value.auth?.userId ||
-    value.auth?.user_id
-  const nextToken = value.token || value.auth?.token
-
-  if (!nextUserId || !nextToken) {
-    return null
-  }
-
-  return {
-    userId: nextUserId,
-    token: nextToken,
-  }
-}
-
-const updateAuthSession = (payload) => {
-  const nextAuth =
-    extractAuth(payload?.result) ||
-    extractAuth(payload?.data) ||
-    extractAuth(payload?.auth) ||
-    extractAuth(payload)
-
-  if (nextAuth) {
-    authSession = nextAuth
-  }
-
-  return authSession
-}
-
-const createFetchError = (error, method) => {
-  if (error instanceof TypeError) {
-    return new Error(`Sales Doctor ${method} failed to fetch.`)
-  }
-
-  return error
-}
-
-const callSalesDoctor = async ({ method, params, includeFilial = true, authOverride }) => {
-  ensureConfigured()
-
-  const auth = authOverride || authSession
-
-  if (!auth) {
-    throw new Error('Sales Doctor auth is not ready yet.')
-  }
-
-  const payload = {
-    method,
-    auth,
-  }
-
-  const filial = includeFilial ? getFilialPayload() : null
-
-  if (filial) {
-    payload.filial = filial
-  }
-
-  if (params) {
-    payload.params = params
-  }
-
-  let response
-
-  try {
-    response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    })
-  } catch (error) {
-    throw createFetchError(error, method)
-  }
-  console.log(response);
-  
-  const result = await response.json().catch(() => null)
-
-  if (!response.ok || !result || result.status === false) {
-    throw new Error(result?.error?.message || `Sales Doctor ${method} failed.`)
-  }
-
-  updateAuthSession(result)
-  return result
-}
-
-const getAuth = async (forceRefresh = false) => {
-  if (!forceRefresh && authSession?.userId && authSession?.token) {
-    return authSession
-  }
-
-  if (hasLoginAuth) {
-    const result = await callSalesDoctor({
-      method: 'login',
-      authOverride: { login, password },
-      includeFilial: false,
-    })
-
-    return (
-      updateAuthSession(result?.result) ||
-      updateAuthSession(result) || {
-        userId: '',
-        token: '',
-      }
-    )
-  }
-
-  authSession = {
-    userId,
-    token,
-  }
-
-  return authSession
-}
 
 const resolveCategoryName = (item) =>
   item?.name || item?.categoryName || item?.productCategoryName || item?.title || ''
@@ -229,6 +62,7 @@ const buildCategoryList = (categories, products = []) => {
 }
 
 const StoreHeader = ({
+  categories = [],
   products = [],
   search,
   onSearchChange,
@@ -238,7 +72,6 @@ const StoreHeader = ({
   selectedSubCategory,
   onSelectAllCategories,
   onSelectCategory,
-  onSelectSubCategory,
 }) => {
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false)
   const [categoryList, setCategoryList] = useState(() => buildCategoryList([], products))
@@ -246,42 +79,8 @@ const StoreHeader = ({
   const categoryDrawerRef = useRef(null)
 
   useEffect(() => {
-    let cancelled = false
-
-    const loadCategories = async () => {
-      try {
-        await getAuth()
-
-        const categoriesResult = await callSalesDoctor({
-          method: 'getProductCategory',
-          params: {
-            page: 1,
-            limit: 100,
-          },
-        })
-
-        const categories = Array.isArray(categoriesResult?.result?.productCategory)
-          ? categoriesResult.result.productCategory
-          : []
-
-        if (!cancelled) {
-          setCategoryList(buildCategoryList(categories, products))
-        }
-      } catch (error) {
-        console.warn(error.message || 'Sales Doctor category request failed.')
-
-        if (!cancelled) {
-          setCategoryList(buildCategoryList([], products))
-        }
-      }
-    }
-
-    loadCategories()
-
-    return () => {
-      cancelled = true
-    }
-  }, [products])
+    setCategoryList(buildCategoryList(categories, products))
+  }, [categories, products])
 
   useEffect(() => {
     if (!categoryMenuOpen) {
@@ -379,7 +178,7 @@ const StoreHeader = ({
               <div className="flex items-start justify-between gap-3 border-b border-app-border px-5 py-4">
                 <div>
                   <p className="text-sm font-extrabold text-app-text">Kategoriyalar</p>
-                  <p className="mt-1 text-xs text-app-text-soft">Sales Doctor category menu</p>
+                  <p className="mt-1 text-xs text-app-text-soft">Backend proxy orqali yuklandi</p>
                 </div>
 
                 <button
@@ -458,7 +257,7 @@ const StoreHeader = ({
                                     : 'text-app-text-soft'
                                 }`}
                               >
-                                Sales Doctor category
+                                Store category
                               </span>
                             </span>
                             <span

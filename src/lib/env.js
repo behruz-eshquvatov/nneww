@@ -9,8 +9,8 @@ export const appConfig = {
   currency: readEnv('VITE_APP_CURRENCY', "so'm"),
 }
 
-const normalizePathSegment = (value) => value.replace(/^\/+|\/+$/g, '')
+const normalizeBaseUrl = (value) => value.replace(/\/+$/g, '')
 
 export const apiConfig = {
-  proxyPrefix: normalizePathSegment(readEnv('VITE_API_PROXY_PREFIX', 'api')),
+  baseUrl: normalizeBaseUrl(readEnv('VITE_API_BASE_URL')),
 }
