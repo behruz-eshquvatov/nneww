@@ -4,7 +4,7 @@ import { formatCount } from '../lib/format'
 
 export const ALL_CATEGORIES = 'All'
 export const ALL_SUBCATEGORIES = 'All'
-
+ 
 const FALLBACK_CATEGORY_TREE = [
   {
     name: 'Smartphones',
