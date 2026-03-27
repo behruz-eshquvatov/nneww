@@ -1,5 +1,4 @@
-import { useDeferredValue, useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import CartDrawer from '../components/CartDrawer'
 import Pagination from '../components/Pagination'
 import ProductCard from '../components/ProductCard'
@@ -7,9 +6,9 @@ import StoreHeader, {
   ALL_CATEGORIES,
   ALL_SUBCATEGORIES,
 } from '../components/StoreHeader.jsx'
-import { isValidDealerId, resolveDealerId } from '../lib/dealer'
 import { formatCount } from '../lib/format'
-import { loadCategories, loadProducts, submitOrder } from '../lib/salesDoctor'
+import { loadSalesDocProducts } from '../lib/salesDoc'
+import { staticCategories, staticProducts } from '../lib/staticStore'
 
 const ITEMS_PER_PAGE = 6
 const EMPTY_FORM = {
@@ -34,17 +33,6 @@ const clampQuantity = (value) => {
   return parsed
 }
 
-const LoadingGrid = () => (
-  <div className="grid h-full min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-    {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
-      <div
-        key={index}
-        className="card-radius h-[24rem] animate-pulse border border-app-border bg-app-surface"
-      />
-    ))}
-  </div>
-)
-
 const EmptyGrid = ({ searchTerm }) => (
   <div className="card-radius flex h-full min-h-0 flex-col items-center justify-center border border-dashed border-app-border bg-app-surface p-8 text-center">
     <h2 className="text-2xl font-extrabold text-app-text">Mahsulot topilmadi</h2>
@@ -56,31 +44,11 @@ const EmptyGrid = ({ searchTerm }) => (
   </div>
 )
 
-const MissingDealerIdState = () => {
-  const examplePath =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/tvMxtrl0zP`
-      : '/tvMxtrl0zP'
-
-  return (
-    <div className="card-radius flex h-full min-h-0 flex-col items-center justify-center border border-dashed border-app-danger bg-app-danger-soft p-8 text-center">
-      <h2 className="text-2xl font-extrabold text-app-danger">dealerId topilmadi</h2>
-      <p className="mt-3 max-w-lg text-sm leading-6 text-app-danger">
-        Store sahifasi URL ichidagi birinchi segmentdan dealerId oladi. Masalan:
-        {' '}
-        {examplePath}
-      </p>
-    </div>
-  )
-}
-
 const StorePage = () => {
-  const { dealerId: routeDealerId } = useParams()
-  const dealerId = resolveDealerId(routeDealerId)
-  const hasDealerId = isValidDealerId(dealerId)
+  const fallbackCategories = useMemo(() => staticCategories, [])
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [isProductsLoading, setIsProductsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES)
   const [selectedSubCategory, setSelectedSubCategory] = useState(ALL_SUBCATEGORIES)
@@ -100,71 +68,53 @@ const StorePage = () => {
   useEffect(() => {
     let cancelled = false
 
-    const loadStore = async () => {
-      if (!hasDealerId) {
-        setProducts([])
-        setCategories([])
-        setLoading(false)
-        setStatus({
-          tone: 'error',
-          text: `Dealer ID topilmadi. Joriy pathname: ${
-            typeof window !== 'undefined' ? window.location.pathname : '/'
-          }`,
-        })
-        return
-      }
-
+    const fetchProducts = async () => {
       try {
-        setLoading(true)
+        setIsProductsLoading(true)
         setStatus({
           tone: 'info',
-          text: `${dealerId} uchun katalog yuklanmoqda...`,
+          text: "SalesDoc mahsulotlari yuklanmoqda...",
         })
 
-        const nextCategories = await loadCategories(dealerId)
-        const nextProducts = await loadProducts(dealerId)
+        const salesDocData = await loadSalesDocProducts()
 
         if (cancelled) {
           return
         }
 
-        setCategories(nextCategories)
-        setProducts(nextProducts)
-        setStatus(
-          nextProducts.length > 0
-            ? {
-              tone: 'success',
-              text: `${dealerId} uchun ${formatCount(nextProducts.length)} ta mahsulot yuklandi.`,
-            }
-            : {
-              tone: 'info',
-              text: `${dealerId} uchun mahsulot topilmadi.`,
-            },
-        )
+        setProducts(salesDocData.products)
+        setCategories(salesDocData.categories)
+        setStatus({
+          tone: 'success',
+          text: `${formatCount(salesDocData.products.length)} ta mahsulot SalesDoc orqali yuklandi.`,
+        })
       } catch (error) {
         if (cancelled) {
           return
         }
 
-        setProducts([])
-        setCategories([])
+        setProducts(staticProducts)
+        setCategories(fallbackCategories)
         setStatus({
           tone: 'error',
-          text: error.message || 'Store maʼlumotlarini yuklashda xatolik yuz berdi.',
+          text:
+            error instanceof Error
+              ? `${error.message} Statik mahsulotlar ko'rsatildi.`
+              : "SalesDoc ulanmagan. Statik mahsulotlar ko'rsatildi.",
         })
       } finally {
         if (!cancelled) {
-          setLoading(false)
+          setIsProductsLoading(false)
         }
       }
     }
 
-    loadStore()
+    fetchProducts()
 
     return () => {
       cancelled = true
     }
-  }, [dealerId, hasDealerId])
+  }, [fallbackCategories])
 
   useEffect(() => {
     setPage(1)
@@ -284,9 +234,9 @@ const StorePage = () => {
     setQuantityEditor((currentEditor) =>
       currentEditor.productId === productId
         ? {
-          productId: null,
-          quantity: '1',
-        }
+            productId: null,
+            quantity: '1',
+          }
         : currentEditor,
     )
   }
@@ -303,11 +253,15 @@ const StorePage = () => {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true)
-      const result = await submitOrder({
-        dealerId,
+      await new Promise((resolve) => window.setTimeout(resolve, 350))
+
+      const payload = {
+        customer: customerForm,
         cart,
-        ...customerForm,
-      })
+        createdAt: new Date().toISOString(),
+      }
+
+      window.localStorage.setItem('new-tujjors-last-order', JSON.stringify(payload))
 
       setCart([])
       setCartOpen(false)
@@ -315,14 +269,12 @@ const StorePage = () => {
       setCustomerForm(EMPTY_FORM)
       setStatus({
         tone: 'success',
-        text: result?.demo
-          ? "Demo rejimida buyurtma mahalliy saqlandi."
-          : 'Buyurtma serverga yuborildi.',
+        text: "Buyurtma brauzerda mahalliy saqlandi. Hech qanday API ishlatilmadi.",
       })
     } catch (error) {
       setStatus({
         tone: 'error',
-        text: error.message || 'Buyurtmani yuborishda xatolik yuz berdi.',
+        text: error.message || 'Buyurtmani mahalliy saqlashda xatolik yuz berdi.',
       })
     } finally {
       setIsSubmitting(false)
@@ -358,17 +310,14 @@ const StorePage = () => {
             <p className="text-sm font-semibold text-app-text">
               {formatCount(filteredProducts.length)} ta mahsulot
             </p>
-            <p className="text-sm text-app-text-soft">
-              {hasDealerId ? `${selectedFilterLabel} • dealerId: ${dealerId}` : selectedFilterLabel}
-            </p>
+            <p className="text-sm text-app-text-soft">{selectedFilterLabel}</p>
           </div>
+          {isProductsLoading && (
+            <p className="text-sm font-medium text-app-text-soft">Yuklanmoqda...</p>
+          )}
         </div>
 
-        {loading ? (
-          <LoadingGrid />
-        ) : !hasDealerId ? (
-          <MissingDealerIdState />
-        ) : filteredProducts.length === 0 ? (
+        {filteredProducts.length === 0 ? (
           <EmptyGrid searchTerm={search} />
         ) : (
           <>

@@ -165,13 +165,13 @@ const CartDrawer = ({
               <label className="block">
                 <span className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-app-text-soft">
                   <NotebookText size={14} />
-                  Izoh
+                  Eslatma
                 </span>
                 <textarea
                   rows="3"
                   value={customerForm.note}
                   onChange={(event) => onFieldChange('note', event.target.value)}
-                  placeholder="Buyurtma uchun izoh"
+                  placeholder="Mahalliy eslatma"
                   className="w-full rounded-2xl border border-app-border bg-app-surface-muted px-4 py-3 text-sm text-app-text"
                 />
               </label>
@@ -192,7 +192,7 @@ const CartDrawer = ({
               disabled={!cart.length || isSubmitting}
               className="w-full rounded-2xl bg-app-accent px-4 py-4 text-base font-bold text-app-accent-contrast transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSubmitting ? 'Yuborilmoqda...' : 'Buyurtmani yuborish'}
+              {isSubmitting ? 'Saqlanmoqda...' : 'Buyurtmani yakunlash'}
             </button>
           </div>
         </aside>

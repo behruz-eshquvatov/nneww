@@ -24,6 +24,14 @@ const ProductCard = ({
   onRemoveFromCart,
 }) => {
   const parsedQuantity = clampQuantity(editorQuantity)
+  const hasStockInfo = Number.isFinite(product.stockLevel)
+  const stockLevel = hasStockInfo ? Math.max(0, product.stockLevel) : 0
+  const stockTone =
+    stockLevel > 10
+      ? 'bg-app-accent-soft text-app-text'
+      : stockLevel > 0
+        ? 'bg-amber-100 text-amber-800'
+        : 'bg-app-danger-soft text-app-danger'
 
   return (
     <article className="card-radius max-w-125 mx-auto flex h-full w-full flex-col overflow-hidden border border-app-border bg-app-surface shadow-soft">
@@ -53,6 +61,18 @@ const ProductCard = ({
               <div className="mt-3 flex items-center gap-2 text-xs text-app-text-soft">
                 <Barcode size={14} strokeWidth={2} />
                 <span className="truncate">{product.barcode || product.code}</span>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                <span className={`rounded-full px-3 py-1 font-semibold ${stockTone}`}>
+                  {stockLevel > 0 ? `Omborda: ${stockLevel} ta` : 'Omborda yo`q'}
+                </span>
+
+                {product.packQuantity > 0 && (
+                  <span className="rounded-full bg-app-surface-muted px-3 py-1 font-semibold text-app-text-soft">
+                    Qadoq: {product.packQuantity} ta
+                  </span>
+                )}
               </div>
             </>
           )}
