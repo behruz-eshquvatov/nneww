@@ -2,6 +2,8 @@ const salesDocBaseUrl =
   process.env.SALESDOC_BASE_URL || "https://villobuhara.salesdoc.io/api/v2/";
 
 const authTtlMs = Number(process.env.SALESDOC_AUTH_TTL_MS || 4 * 60 * 1000);
+const defaultPriceTypeId =
+  String(process.env.SALESDOC_PRICE_TYPE_ID || "d0_2").trim() || "d0_2";
 
 const defaultFilial = {
   filial_id: Number(process.env.SALESDOC_FILIAL_ID || 0),
@@ -141,6 +143,19 @@ const buildSalesDocPayload = (method, params) => ({
   params,
 });
 
+const compactText = (value) =>
+  typeof value === "string" ? value.trim() : "";
+
+const buildSalesDocEntityRef = (value) => {
+  const id = compactText(String(value || ""));
+
+  return {
+    CS_id: id,
+    SD_id: id,
+    code_1C: "",
+  };
+};
+
 const readSalesDocErrorMessage = (payload, fallbackMessage) => {
   const rawError = payload?.error;
 
@@ -173,34 +188,90 @@ const unwrapSalesDocCollection = (result, key, fallbackMessage) => {
     : [];
 };
 
+const unwrapSalesDocArrayResult = (result, fallbackMessage) => {
+  if (!result?.response?.ok || result?.data?.status === false) {
+    throw new Error(readSalesDocErrorMessage(result?.data, fallbackMessage));
+  }
+
+  return Array.isArray(result?.data?.result) ? result.data.result : [];
+};
+
+const resolveSalesDocEntityId = (value) => {
+  if (typeof value === "string" || typeof value === "number") {
+    return compactText(String(value));
+  }
+
+  return compactText(value?.CS_id || value?.SD_id || value?.code_1C || value?.id);
+};
+
+const buildPriceMap = (prices) =>
+  prices.reduce((map, item) => {
+    const key = resolveSalesDocEntityId(item?.product);
+    const price = Number(item?.price);
+
+    if (key && Number.isFinite(price)) {
+      map.set(key, price);
+    }
+
+    return map;
+  }, new Map());
+
 export const fetchSalesDocCatalog = async () => {
-  const categoriesResult = await requestSalesDocWithAuth(
-    buildSalesDocPayload("getProductCategory", {
-      page: 1,
-      limit: 100,
-    }),
-  );
+  const [categoriesResult, subCategoriesResult, productsResult, pricesResult] =
+    await Promise.all([
+      requestSalesDocWithAuth(
+        buildSalesDocPayload("getProductCategory", {
+          page: 1,
+          limit: 100,
+        }),
+      ),
+      requestSalesDocWithAuth(
+        buildSalesDocPayload("getProductSubCategory", {
+          page: 1,
+          limit: 100,
+        }),
+      ),
+      requestSalesDocWithAuth(
+        buildSalesDocPayload("getProduct", {
+          page: 1,
+          limit: 100,
+          filter: {
+            trade: {
+              CS_id: 1,
+              SD_id: 1,
+              code_1C: "",
+            },
+          },
+        }),
+      ),
+      requestSalesDocWithAuth(
+        buildSalesDocPayload("getPrice", {
+          priceType: buildSalesDocEntityRef(defaultPriceTypeId),
+        }),
+      ),
+    ]);
 
-  const subCategoriesResult = await requestSalesDocWithAuth(
-    buildSalesDocPayload("getProductSubCategory", {
-      page: 1,
-      limit: 100,
-    }),
+  const products = unwrapSalesDocCollection(
+    productsResult,
+    "product",
+    "Failed to fetch SalesDoc products.",
   );
+  const prices = unwrapSalesDocArrayResult(
+    pricesResult,
+    "Failed to fetch SalesDoc product prices.",
+  );
+  const priceByProductId = buildPriceMap(prices);
+  const productsWithPrices = products.map((product) => {
+    const productId = resolveSalesDocEntityId(product);
+    const resolvedPrice = priceByProductId.get(productId);
 
-  const productsResult = await requestSalesDocWithAuth(
-    buildSalesDocPayload("getProduct", {
-      page: 1,
-      limit: 100,
-      filter: {
-        trade: {
-          CS_id: 1,
-          SD_id: 1,
-          code_1C: "",
-        },
-      },
-    }),
-  );
+    return {
+      ...product,
+      price: Number.isFinite(resolvedPrice) ? resolvedPrice : 0,
+      priceValue: Number.isFinite(resolvedPrice) ? resolvedPrice : 0,
+      price_type: defaultPriceTypeId,
+    };
+  });
 
   return {
     status: true,
@@ -215,11 +286,7 @@ export const fetchSalesDocCatalog = async () => {
         "productSubCategory",
         "Failed to fetch SalesDoc product subcategories.",
       ),
-      product: unwrapSalesDocCollection(
-        productsResult,
-        "product",
-        "Failed to fetch SalesDoc products.",
-      ),
+      product: productsWithPrices,
     },
   };
 };

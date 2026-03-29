@@ -29,13 +29,24 @@ const resolveAbsoluteAssetUrl = (assetPath) => {
   }
 }
 
+const resolveDynamicPriceKey = (value) => {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return compactText(String(value))
+  }
+
+  return compactText(value?.CS_id || value?.SD_id || value?.code_1C || value?.id)
+}
+
 const resolveProductPrice = (product) => {
+  const dynamicPriceKey = resolveDynamicPriceKey(product?.price_type || product?.priceType)
   const priceCandidates = [
     product?.price,
     product?.salePrice,
     product?.priceValue,
     product?.amount,
     product?.summa,
+    dynamicPriceKey ? product?.[dynamicPriceKey] : undefined,
+    dynamicPriceKey ? product?.raw?.[dynamicPriceKey] : undefined,
   ]
 
   for (const candidate of priceCandidates) {

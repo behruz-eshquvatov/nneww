@@ -23,6 +23,7 @@ Vite + React storefront with a SalesDoc proxy for local Express and Netlify Func
 - `VITE_API_BASE_URL`
 - `VITE_SALESDOC_ASSET_BASE_URL`
 - `SALESDOC_BASE_URL`
+- `SALESDOC_PRICE_TYPE_ID`
 - `SALESDOC_LOGIN`
 - `SALESDOC_PASSWORD`
 
@@ -34,5 +35,5 @@ Vite + React storefront with a SalesDoc proxy for local Express and Netlify Func
 ## Netlify
 
 - Netlify `dist` bilan birga `netlify/functions` papkasidagi serverless endpointlarni ham deploy qiladi.
-- Netlify environment variables ichida kamida `SALESDOC_BASE_URL`, `SALESDOC_LOGIN`, `SALESDOC_PASSWORD`, `VITE_SALESDOC_ASSET_BASE_URL` ni kiriting.
+- Netlify environment variables ichida kamida `SALESDOC_BASE_URL`, `SALESDOC_PRICE_TYPE_ID`, `SALESDOC_LOGIN`, `SALESDOC_PASSWORD`, `VITE_SALESDOC_ASSET_BASE_URL` ni kiriting.
 - `VITE_API_BASE_URL` ni Netlify'da bo'sh qoldiring yoki umuman bermang, shunda frontend shu domen ichidagi `/api/...` endpointlarga murojaat qiladi.
