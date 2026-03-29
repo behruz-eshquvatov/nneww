@@ -91,7 +91,7 @@ const ProductCard = ({
 
               <div className="mt-3 flex items-center gap-2 text-xs text-app-text-soft">
                 <Barcode size={14} strokeWidth={2} />
-                <span className="truncate">{product.barcode || product.code}</span>
+                <span className="truncate">{product.barcode || 'mavjud emas'}</span>
               </div>
             </>
           )}
