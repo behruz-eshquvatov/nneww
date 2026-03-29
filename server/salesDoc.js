@@ -85,7 +85,7 @@ const loginToSalesDoc = async (config) => {
     !data?.result?.userId ||
     !data?.result?.token
   ) {
-    throw new Error(data?.error || data?.details || "SalesDoc login failed.");
+    throw new Error(readSalesDocErrorMessage(data, "SalesDoc login failed."));
   }
 
   return data.result;
