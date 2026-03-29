@@ -25,7 +25,7 @@ const CartDrawer = ({
   const phoneError = validationErrors.customerPhone
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/35">
+    <div className="fixed inset-0 z-40 bg-black/35" onClick={onClose}>
       <div className="absolute inset-y-0 right-0 flex w-full max-w-xl">
         <button
           type="button"
@@ -34,7 +34,10 @@ const CartDrawer = ({
           className="hidden flex-1 md:block"
         />
 
-        <aside className="flex h-full w-full flex-col border-l border-app-border bg-app-surface">
+        <aside
+          className="flex h-full w-full flex-col border-l border-app-border bg-app-surface"
+          onClick={(event) => event.stopPropagation()}
+        >
           <div className="flex items-center justify-between border-b border-app-border px-5 py-4">
             <div>
               <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-app-text-soft">

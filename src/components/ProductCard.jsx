@@ -1,4 +1,4 @@
-import { Barcode, ShoppingCart, Trash2 } from 'lucide-react'
+import { ShoppingCart } from 'lucide-react'
 import { formatPrice } from '../lib/format'
 
 const clampQuantity = (value) => {
@@ -52,7 +52,6 @@ const ProductCard = ({
   onChangeEditorQuantity,
   onAdjustEditorQuantity,
   onSaveQuantity,
-  onRemoveFromCart,
 }) => {
   const parsedQuantity = clampQuantity(editorQuantity)
   return (
@@ -88,11 +87,6 @@ const ProductCard = ({
               <h2 className="mt-3 line-clamp-2 text-sm font-bold text-app-text md:text-base">
                 {product.name}
               </h2>
-
-              <div className="mt-3 flex items-center gap-2 text-xs text-app-text-soft">
-                <Barcode size={14} strokeWidth={2} />
-                <span className="truncate">{product.barcode || 'mavjud emas'}</span>
-              </div>
             </>
           )}
         </div>
@@ -109,20 +103,6 @@ const ProductCard = ({
         <div className="mt-4">
           {isEditorOpen ? (
             <div className="">
-              <div className="flex items-start justify-between gap-3">
-
-                {quantityInCart > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => onRemoveFromCart(product.id)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-app-danger-soft px-3 py-2 text-xs font-semibold text-app-danger"
-                  >
-                    <Trash2 size={14} />
-                    <span>Olib tashlash</span>
-                  </button>
-                )}
-              </div>
-
               <div className="-mt-1 grid grid-cols-11 gap-2">
                 {[ -5, -1].map((step) => (
                   <button

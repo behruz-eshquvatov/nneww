@@ -3,6 +3,32 @@ import { getDealerApiBaseUrl } from "./dealerApi.js";
 const compactText = (value) =>
   typeof value === "string" ? value.trim() : "";
 
+const normalizeWhitespace = (value) =>
+  compactText(value).replace(/\s+/g, " ");
+
+const normalizeCustomerName = (value) => normalizeWhitespace(value);
+
+const normalizeCustomerPhone = (value) => {
+  const raw = compactText(value);
+  const digits = raw.replace(/\D/g, "");
+
+  if (digits.length === 9) {
+    return `+998${digits}`;
+  }
+
+  if (digits.length === 12 && digits.startsWith("998")) {
+    return `+${digits}`;
+  }
+
+  if (raw.startsWith("+") && digits) {
+    return `+${digits}`;
+  }
+
+  return raw;
+};
+
+const countLetters = (value) => value.replace(/[^\p{L}]/gu, "").length;
+
 const getDealerOrderEndpoint = () =>
   compactText(process.env.DEALER_ORDER_ENDPOINT) ||
   `${getDealerApiBaseUrl().replace(/\/$/, "")}/api/dealers/send-order/`;
@@ -19,12 +45,41 @@ const normalizeCartItem = (item) => {
 };
 
 const normalizeCustomer = (customer) => ({
-  name: compactText(customer?.name) || compactText(customer?.customer_name) || compactText(customer?.customerName),
+  name:
+    normalizeCustomerName(customer?.name) ||
+    normalizeCustomerName(customer?.customer_name) ||
+    normalizeCustomerName(customer?.customerName),
   phone:
-    compactText(customer?.phone) ||
-    compactText(customer?.customer_phone) ||
-    compactText(customer?.customerPhone),
+    normalizeCustomerPhone(customer?.phone) ||
+    normalizeCustomerPhone(customer?.customer_phone) ||
+    normalizeCustomerPhone(customer?.customerPhone),
 });
+
+const validateDealerOrderPayload = (payload) => {
+  if (!payload.name) {
+    const error = new Error("Customer name is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (countLetters(payload.name) < 2 || /\d/.test(payload.name)) {
+    const error = new Error("Customer name must contain at least 2 letters and no numbers.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!payload.phone) {
+    const error = new Error("Customer phone is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!/^\+998\d{9}$/.test(payload.phone)) {
+    const error = new Error("Customer phone must use the +998901234567 format.");
+    error.statusCode = 400;
+    throw error;
+  }
+};
 
 export const buildDealerOrderPayload = (payload) => {
   const customer = normalizeCustomer(payload?.customer || payload);
@@ -82,6 +137,7 @@ const readErrorMessage = (payload, fallbackMessage) => {
 
 export const sendDealerOrder = async (payload) => {
   const dealerPayload = buildDealerOrderPayload(payload);
+  validateDealerOrderPayload(dealerPayload);
   const dealerOrderEndpoint = getDealerOrderEndpoint();
   const response = await fetch(dealerOrderEndpoint, {
     method: "POST",

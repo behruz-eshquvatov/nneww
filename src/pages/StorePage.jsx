@@ -551,7 +551,6 @@ const StorePage = () => {
                   onChangeEditorQuantity={changeEditorQuantity}
                   onAdjustEditorQuantity={adjustEditorQuantity}
                   onSaveQuantity={saveEditorQuantity}
-                  onRemoveFromCart={removeFromCart}
                 />
               ))}
             </div>
