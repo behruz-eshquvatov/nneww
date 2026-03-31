@@ -136,7 +136,7 @@ const StoreHeader = ({
 
   return (
     <>
-      <header className="shrink-0 border-b border-app-border bg-app-surface">
+      <header className="shrink-0 fixed top-0 z-20 right-0 left-0 border-b border-app-border bg-app-surface">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-3 px-4 py-4 md:flex-nowrap">
           <div ref={categoryTriggerRef} className="w-full md:w-auto">
             <button
