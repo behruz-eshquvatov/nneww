@@ -110,7 +110,7 @@ const CartDrawer = ({
                           min="1"
                           value={item.quantity}
                           onChange={(event) => onUpdateItemQuantity(item, event.target.value)}
-                          className="min-w-0 rounded-xl border border-app-border bg-app-surface px-2 py-2 text-center text-sm font-bold text-app-text"
+                          className=" rounded-[1.4rem] border-2 border-app-accent bg-app-surface px-4 py-3 text-center text-2xl font-extrabold text-app-text shadow-[0_0_0_3px_rgba(15,118,110,0.14)] focus:outline-none"
                         />
                         <button
                           type="button"

@@ -505,7 +505,7 @@ const StorePage = () => {
         onSelectCategory={selectCategory}
       />
 
-      <section className="mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col overflow-hidden px-4 py-4">
+      <section className="mx-auto mt-24 flex w-full max-w-7xl min-h-0 flex-1 flex-col overflow-hidden px-4 py-4">
         {status && (
           <div
             className={`card-radius mb-4 shrink-0 border px-4 py-3 text-sm font-medium ${ToneClasses[status.tone]}`}
@@ -532,7 +532,7 @@ const StorePage = () => {
           <EmptyGrid searchTerm={search} />
         ) : (
           <>
-            <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid mt-4 min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
               {visibleProducts.map((product, index) => (
                 <ProductCard
                   key={product.id}
