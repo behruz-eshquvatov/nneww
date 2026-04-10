@@ -24,7 +24,7 @@ const resolveRouteAssignmentCode = () => {
 const parseJsonResponse = async (response, fallbackMessage) => {
   const payload = await response.json().catch(() => null)
 
-  if (!response.ok || payload?.status === false) {
+  if (!response.ok || payload?.status === false || !payload || typeof payload !== 'object') {
     throw new Error(
       payload?.details || payload?.error || payload?.message || fallbackMessage,
     )
