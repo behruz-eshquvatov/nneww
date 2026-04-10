@@ -26,11 +26,14 @@ const EMPTY_FORM = {
   customerName: '',
   customerPhone: '',
 }
+const LOADING_STATUS_TEXT = 'Katalog yuklanmoqda...'
+const TOAST_AUTO_HIDE_MS = 3200
+const TOAST_EXIT_MS = 260
 
 const ToneClasses = {
-  info: 'border-app-border bg-app-surface text-app-text',
-  success: 'border-app-accent bg-app-accent-soft text-app-text',
-  error: 'border-app-danger bg-app-danger-soft text-app-danger',
+  info: 'border-[#0f766e] bg-[#0f766e] text-white',
+  success: 'border-[#0f766e] bg-[#0f766e] text-white',
+  error: 'border-[#b42318] bg-[#b42318] text-white',
 }
 
 const clampQuantity = (value) => {
@@ -108,7 +111,7 @@ const EmptyGrid = ({ searchTerm }) => (
 )
 
 const LoadingGrid = () => (
-  <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+  <div className="grid min-h-0 flex-1 content-start grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
     {Array.from({ length: LOADING_SKELETON_COUNT }).map((_, index) => (
       <ProductCardSkeleton key={`loading-card-${index}`} />
     ))}
@@ -138,8 +141,9 @@ const StorePage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState({
     tone: 'info',
-    text: 'Katalog yuklanmoqda...',
+    text: LOADING_STATUS_TEXT,
   })
+  const [isToastVisible, setIsToastVisible] = useState(false)
   const loadMoreTriggerRef = useRef(null)
 
   const deferredSearch = useDeferredValue(search.trim().toLowerCase())
@@ -153,6 +157,43 @@ const StorePage = () => {
   )
 
   useEffect(() => {
+    if (!status) {
+      return
+    }
+
+    setIsToastVisible(true)
+
+    const isPersistentLoadingStatus =
+      status.tone === 'info' && status.text === LOADING_STATUS_TEXT
+
+    if (isPersistentLoadingStatus) {
+      return
+    }
+
+    const hideTimer = window.setTimeout(() => {
+      setIsToastVisible(false)
+    }, TOAST_AUTO_HIDE_MS)
+
+    return () => {
+      window.clearTimeout(hideTimer)
+    }
+  }, [status])
+
+  useEffect(() => {
+    if (!status || isToastVisible) {
+      return
+    }
+
+    const clearTimer = window.setTimeout(() => {
+      setStatus((currentStatus) => (currentStatus === status ? null : currentStatus))
+    }, TOAST_EXIT_MS)
+
+    return () => {
+      window.clearTimeout(clearTimer)
+    }
+  }, [isToastVisible, status])
+
+  useEffect(() => {
     let cancelled = false
 
     const fetchCatalog = async () => {
@@ -160,7 +201,7 @@ const StorePage = () => {
         setIsProductsLoading(true)
         setStatus({
           tone: 'info',
-          text: 'Katalog yuklanmoqda...',
+          text: LOADING_STATUS_TEXT,
         })
 
         const assignmentData = await loadAssignmentCatalogFromRoute()
@@ -483,6 +524,18 @@ const StorePage = () => {
 
   return (
     <main className="flex min-h-dvh flex-col overflow-hidden bg-app-bg">
+      {status && (
+        <div
+          className={`fixed top-4 right-4 z-50 w-[min(92vw,30rem)] rounded-lg border px-4 py-3 text-sm font-medium shadow-soft transition-all duration-300 ${
+            isToastVisible
+              ? 'translate-x-0 opacity-100'
+              : 'pointer-events-none translate-x-8 opacity-0'
+          } ${ToneClasses[status.tone]}`}
+        >
+          {status.text}
+        </div>
+      )}
+
       <StoreHeader
         categories={categories}
         products={products}
@@ -497,14 +550,6 @@ const StorePage = () => {
       />
 
       <section className="mx-auto mt-24 flex w-full max-w-7xl min-h-0 flex-1 flex-col overflow-hidden px-4 py-4">
-        {status && (
-          <div
-            className={`card-radius mb-4 shrink-0 border px-4 py-3 text-sm font-medium ${ToneClasses[status.tone]}`}
-          >
-            {status.text}
-          </div>
-        )}
-
         <div className="mb-4 flex shrink-0 items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-app-text">
@@ -512,7 +557,6 @@ const StorePage = () => {
             </p>
             <p className="text-sm text-app-text-soft">
               {selectedFilterLabel}
-              {assignmentCode ? ` | Kod: ${assignmentCode}` : ''}
             </p>
           </div>
           {isProductsLoading && (
@@ -526,7 +570,7 @@ const StorePage = () => {
           <EmptyGrid searchTerm={search} />
         ) : (
           <>
-            <div className="grid mt-4 min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid mt-4 min-h-0 flex-1 content-start grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
               {visibleProducts.map((product, index) => (
                 <ProductCard
                   key={product.id}
@@ -577,4 +621,3 @@ const StorePage = () => {
 }
 
 export default StorePage
-

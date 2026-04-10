@@ -1,6 +1,7 @@
 import heroImage from '../assets/hero.png'
 
-const ASSIGNMENT_API_BASE_URL = 'http://45.94.209.80:8005'
+const ASSIGNMENT_API_BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
 const ASSIGNMENT_ENDPOINT_PREFIX = `${ASSIGNMENT_API_BASE_URL}/api/dealers/assignment/`
 const ASSIGNMENT_ORDER_ENDPOINT = `${ASSIGNMENT_API_BASE_URL}/api/dealers/assignment-order/`
 

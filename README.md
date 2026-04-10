@@ -12,8 +12,12 @@ Vite + React asosidagi assignment storefront.
 1. `npm run build`
 2. `npm run preview`
 
+## Sozlamalar (ixtiyoriy)
+
+- `VITE_API_BASE_URL` - API base URL (default: bo'sh, ya'ni joriy origin)
+
 ## Eslatma
 
 - Route ichidagi birinchi segment assignment code sifatida olinadi.
-- Masalan: `/A8824E28` ochilganda katalog `GET http://45.94.209.80:8005/api/dealers/assignment/A8824E28/` dan olinadi.
-- Buyurtma `POST http://45.94.209.80:8005/api/dealers/assignment-order/` ga yuboriladi.
+- Masalan: `/A8824E28` ochilganda katalog `GET /api/dealers/assignment/A8824E28/` dan olinadi.
+- Buyurtma `POST /api/dealers/assignment-order/` ga yuboriladi.
