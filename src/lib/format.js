@@ -1,4 +1,4 @@
-import { appConfig } from './env'
+const CURRENCY = "so'm"
 
 export const formatPriceValue = (value) => {
   const amount = Number(value) || 0
@@ -15,6 +15,6 @@ export const formatPriceValue = (value) => {
   return `${sign}${formattedAmount}`
 }
 
-export const formatPrice = (value) => `${formatPriceValue(value)} ${appConfig.currency}`
+export const formatPrice = (value) => `${formatPriceValue(value)} ${CURRENCY}`
 
 export const formatCount = (value) => new Intl.NumberFormat('uz-UZ').format(value)

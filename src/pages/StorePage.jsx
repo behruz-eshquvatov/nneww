@@ -13,9 +13,11 @@ import StoreHeader, {
   ALL_SUBCATEGORIES,
 } from '../components/StoreHeader.jsx'
 import { formatCount } from '../lib/format'
-import { submitDealerOrder } from '../lib/orders'
-import { loadSalesDocProducts } from '../lib/salesDoc'
-import { staticCategories, staticProducts } from '../lib/staticStore'
+import {
+  buildAssignmentOrderPayload,
+  loadAssignmentCatalogFromRoute,
+  submitAssignmentOrder,
+} from '../lib/assignmentApi'
 
 const LOADING_SKELETON_COUNT = 6
 const INITIAL_VISIBLE_PRODUCTS = 12
@@ -113,29 +115,8 @@ const LoadingGrid = () => (
   </div>
 )
 
-const resolveDealerAccess = () => {
-  if (typeof window === 'undefined') {
-    return {
-      hasAccess: false,
-      dealerId: '',
-    }
-  }
-
-  const pathSegments = window.location.pathname
-    .split('/')
-    .map((segment) => segment.trim())
-    .filter(Boolean)
-  const dealerId = pathSegments[0] || ''
-
-  return {
-    hasAccess: Boolean(dealerId),
-    dealerId,
-  }
-}
-
 const StorePage = () => {
-  const fallbackCategories = useMemo(() => staticCategories, [])
-  const dealerAccess = useMemo(() => resolveDealerAccess(), [])
+  const [assignmentCode, setAssignmentCode] = useState('')
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [isProductsLoading, setIsProductsLoading] = useState(true)
@@ -144,7 +125,10 @@ const StorePage = () => {
   const [selectedSubCategory, setSelectedSubCategory] = useState(ALL_SUBCATEGORIES)
   const [cart, setCart] = useState([])
   const [cartOpen, setCartOpen] = useState(false)
-  const [visibleProductCount, setVisibleProductCount] = useState(INITIAL_VISIBLE_PRODUCTS)
+  const [visibleProductState, setVisibleProductState] = useState({
+    key: '',
+    count: INITIAL_VISIBLE_PRODUCTS,
+  })
   const [quantityEditor, setQuantityEditor] = useState({
     productId: null,
     quantity: '1',
@@ -152,7 +136,10 @@ const StorePage = () => {
   const [customerForm, setCustomerForm] = useState(EMPTY_FORM)
   const [touchedFields, setTouchedFields] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [status, setStatus] = useState(null)
+  const [status, setStatus] = useState({
+    tone: 'info',
+    text: 'Katalog yuklanmoqda...',
+  })
   const loadMoreTriggerRef = useRef(null)
 
   const deferredSearch = useDeferredValue(search.trim().toLowerCase())
@@ -168,47 +155,38 @@ const StorePage = () => {
   useEffect(() => {
     let cancelled = false
 
-    const fetchProducts = async () => {
-      if (!dealerAccess.hasAccess) {
-        setProducts([])
-        setCategories([])
-        setStatus({
-          tone: 'error',
-          text: 'No dealer found',
-        })
-        setIsProductsLoading(false)
-        return
-      }
-
+    const fetchCatalog = async () => {
       try {
         setIsProductsLoading(true)
         setStatus({
           tone: 'info',
-          text: "SalesDoc mahsulotlari yuklanmoqda...",
+          text: 'Katalog yuklanmoqda...',
         })
 
-        const salesDocData = await loadSalesDocProducts(dealerAccess.dealerId)
+        const assignmentData = await loadAssignmentCatalogFromRoute()
 
         if (cancelled) {
           return
         }
 
-        setProducts(salesDocData.products)
-        setCategories(salesDocData.categories)
+        setAssignmentCode(assignmentData.assignmentCode)
+        setProducts(assignmentData.products)
+        setCategories(assignmentData.categories)
         setStatus(null)
       } catch (error) {
         if (cancelled) {
           return
         }
 
-        setProducts(staticProducts)
-        setCategories(fallbackCategories)
+        setAssignmentCode('')
+        setProducts([])
+        setCategories([])
         setStatus({
           tone: 'error',
           text:
             error instanceof Error
-              ? `${error.message} Statik mahsulotlar ko'rsatildi.`
-              : "SalesDoc ulanmagan. Statik mahsulotlar ko'rsatildi.",
+              ? error.message
+              : "Assignment ma'lumotlarini yuklab bo'lmadi.",
         })
       } finally {
         if (!cancelled) {
@@ -217,18 +195,20 @@ const StorePage = () => {
       }
     }
 
-    fetchProducts()
+    fetchCatalog()
 
     return () => {
       cancelled = true
     }
-  }, [dealerAccess.hasAccess, fallbackCategories])
+  }, [])
+
   const selectedFilterLabel =
     selectedCategory === ALL_CATEGORIES
       ? "Barcha bo'limlar"
       : selectedSubCategory !== ALL_SUBCATEGORIES
         ? `${selectedCategory} / ${selectedSubCategory}`
         : selectedCategory
+  const filterKey = `${deferredSearch}|${selectedCategory}|${selectedSubCategory}|${products.length}`
 
   const filteredProducts = useMemo(() => {
     const nextProducts = products.filter((product) => {
@@ -266,6 +246,10 @@ const StorePage = () => {
       )
     })
   }, [deferredSearch, products, selectedCategory, selectedSubCategory])
+  const visibleProductCount =
+    visibleProductState.key === filterKey
+      ? visibleProductState.count
+      : INITIAL_VISIBLE_PRODUCTS
   const visibleProducts = filteredProducts.slice(0, visibleProductCount)
   const hasMoreProducts = visibleProducts.length < filteredProducts.length
 
@@ -274,10 +258,6 @@ const StorePage = () => {
     () => new Map(cart.map((item) => [item.id, item.quantity])),
     [cart],
   )
-
-  useEffect(() => {
-    setVisibleProductCount(INITIAL_VISIBLE_PRODUCTS)
-  }, [deferredSearch, selectedCategory, selectedSubCategory, products])
 
   useEffect(() => {
     const trigger = loadMoreTriggerRef.current
@@ -295,9 +275,17 @@ const StorePage = () => {
         }
 
         startTransition(() => {
-          setVisibleProductCount((currentCount) =>
-            Math.min(filteredProducts.length, currentCount + VISIBLE_PRODUCTS_STEP),
-          )
+          setVisibleProductState((currentState) => {
+            const currentCount =
+              currentState.key === filterKey
+                ? currentState.count
+                : INITIAL_VISIBLE_PRODUCTS
+
+            return {
+              key: filterKey,
+              count: Math.min(filteredProducts.length, currentCount + VISIBLE_PRODUCTS_STEP),
+            }
+          })
         })
       },
       {
@@ -310,7 +298,7 @@ const StorePage = () => {
     return () => {
       observer.disconnect()
     }
-  }, [filteredProducts.length, hasMoreProducts, isProductsLoading])
+  }, [filterKey, filteredProducts.length, hasMoreProducts, isProductsLoading])
 
   const selectAllCategories = () => {
     setSelectedCategory(ALL_CATEGORIES)
@@ -408,8 +396,7 @@ const StorePage = () => {
   }
 
   const handleCustomerFieldChange = (field, value) => {
-    const nextValue =
-      field === 'customerPhone' ? value.replace(/[^\d+\s()-]/g, '') : value
+    const nextValue = field === 'customerPhone' ? value.replace(/[^\d+\s()-]/g, '') : value
 
     setCustomerForm((currentForm) => ({
       ...currentForm,
@@ -442,20 +429,28 @@ const StorePage = () => {
       return
     }
 
+    if (!assignmentCode) {
+      setStatus({
+        tone: 'error',
+        text: 'Assignment code aniqlanmadi, buyurtma yuborilmadi.',
+      })
+      return
+    }
+
+    const payload = buildAssignmentOrderPayload({
+      assignmentCode,
+      customer: normalizedCustomerForm,
+      cart,
+    })
+
     try {
       setIsSubmitting(true)
+      const response = await submitAssignmentOrder(payload)
 
-      const payload = {
-        dealerId: dealerAccess.dealerId,
-        customer: normalizedCustomerForm,
-        cart,
-        createdAt: new Date().toISOString(),
-        link: dealerAccess.dealerId,
-      }
-
-      const response = await submitDealerOrder(payload)
-
-      window.localStorage.setItem('new-tujjors-last-order', JSON.stringify(payload))
+      window.localStorage.setItem(
+        `new-tujjors-last-order-${assignmentCode}`,
+        JSON.stringify(payload),
+      )
 
       setCart([])
       setCartOpen(false)
@@ -466,23 +461,19 @@ const StorePage = () => {
         tone: 'success',
         text:
           response?.result?.message ||
-          "Buyurtma dealer serverga yuborildi.",
+          response?.message ||
+          "Buyurtma muvaffaqiyatli yuborildi.",
       })
     } catch (error) {
-      const payload = {
-        dealerId: dealerAccess.dealerId,
-        customer: normalizedCustomerForm,
-        cart,
-        createdAt: new Date().toISOString(),
-        link: dealerAccess.dealerId,
-      }
-
-      window.localStorage.setItem('new-tujjors-last-order-failed', JSON.stringify(payload))
+      window.localStorage.setItem(
+        `new-tujjors-last-order-failed-${assignmentCode}`,
+        JSON.stringify(payload),
+      )
 
       setStatus({
         tone: 'error',
         text: `${
-          error.message || "Buyurtmani dealer serverga yuborib bo'lmadi."
+          error instanceof Error ? error.message : "Buyurtmani yuborib bo'lmadi."
         } Nusxa brauzerda saqlandi.`,
       })
     } finally {
@@ -519,7 +510,10 @@ const StorePage = () => {
             <p className="text-sm font-semibold text-app-text">
               {formatCount(filteredProducts.length)} ta mahsulot
             </p>
-            <p className="text-sm text-app-text-soft">{selectedFilterLabel}</p>
+            <p className="text-sm text-app-text-soft">
+              {selectedFilterLabel}
+              {assignmentCode ? ` | Kod: ${assignmentCode}` : ''}
+            </p>
           </div>
           {isProductsLoading && (
             <p className="text-sm font-medium text-app-text-soft">Yuklanmoqda...</p>
@@ -583,3 +577,4 @@ const StorePage = () => {
 }
 
 export default StorePage
+

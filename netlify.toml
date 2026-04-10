@@ -1,27 +1,6 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  functions = "netlify/functions"
-
-[[redirects]]
-  from = "/api/salesdoc/login"
-  to = "/.netlify/functions/salesdoc-login"
-  status = 200
-
-[[redirects]]
-  from = "/api/salesdoc/products"
-  to = "/.netlify/functions/salesdoc-products"
-  status = 200
-
-[[redirects]]
-  from = "/api/dealers/send-order"
-  to = "/.netlify/functions/dealers-send-order"
-  status = 200
-
-[[redirects]]
-  from = "/health"
-  to = "/.netlify/functions/health"
-  status = 200
 
 [[redirects]]
   from = "/*"

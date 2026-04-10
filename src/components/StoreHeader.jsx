@@ -185,7 +185,7 @@ const StoreHeader = ({
               <div className="flex items-start justify-between gap-3 border-b border-app-border px-5 py-4">
                 <div>
                   <p className="text-sm font-extrabold text-app-text">Kategoriyalar</p>
-                  <p className="mt-1 text-xs text-app-text-soft">Statik katalog bo&apos;limlari</p>
+                  <p className="mt-1 text-xs text-app-text-soft">Katalog bo&apos;limlari</p>
                 </div>
 
                 <button
