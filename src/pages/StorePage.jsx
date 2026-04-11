@@ -26,15 +26,6 @@ const EMPTY_FORM = {
   customerName: '',
   customerPhone: '',
 }
-const LOADING_STATUS_TEXT = 'Katalog yuklanmoqda...'
-const TOAST_AUTO_HIDE_MS = 3200
-const TOAST_EXIT_MS = 260
-
-const ToneClasses = {
-  info: 'border-[#0f766e] bg-[#0f766e] text-white',
-  success: 'border-[#0f766e] bg-[#0f766e] text-white',
-  error: 'border-[#b42318] bg-[#b42318] text-white',
-}
 
 const clampQuantity = (value) => {
   const parsed = Number.parseInt(value, 10)
@@ -139,11 +130,6 @@ const StorePage = () => {
   const [customerForm, setCustomerForm] = useState(EMPTY_FORM)
   const [touchedFields, setTouchedFields] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [status, setStatus] = useState({
-    tone: 'info',
-    text: LOADING_STATUS_TEXT,
-  })
-  const [isToastVisible, setIsToastVisible] = useState(false)
   const loadMoreTriggerRef = useRef(null)
 
   const deferredSearch = useDeferredValue(search.trim().toLowerCase())
@@ -157,52 +143,11 @@ const StorePage = () => {
   )
 
   useEffect(() => {
-    if (!status) {
-      return
-    }
-
-    setIsToastVisible(true)
-
-    const isPersistentLoadingStatus =
-      status.tone === 'info' && status.text === LOADING_STATUS_TEXT
-
-    if (isPersistentLoadingStatus) {
-      return
-    }
-
-    const hideTimer = window.setTimeout(() => {
-      setIsToastVisible(false)
-    }, TOAST_AUTO_HIDE_MS)
-
-    return () => {
-      window.clearTimeout(hideTimer)
-    }
-  }, [status])
-
-  useEffect(() => {
-    if (!status || isToastVisible) {
-      return
-    }
-
-    const clearTimer = window.setTimeout(() => {
-      setStatus((currentStatus) => (currentStatus === status ? null : currentStatus))
-    }, TOAST_EXIT_MS)
-
-    return () => {
-      window.clearTimeout(clearTimer)
-    }
-  }, [isToastVisible, status])
-
-  useEffect(() => {
     let cancelled = false
 
     const fetchCatalog = async () => {
       try {
         setIsProductsLoading(true)
-        setStatus({
-          tone: 'info',
-          text: LOADING_STATUS_TEXT,
-        })
 
         const assignmentData = await loadAssignmentCatalogFromRoute()
 
@@ -213,8 +158,7 @@ const StorePage = () => {
         setAssignmentCode(assignmentData.assignmentCode)
         setProducts(assignmentData.products)
         setCategories(assignmentData.categories)
-        setStatus(null)
-      } catch (error) {
+      } catch {
         if (cancelled) {
           return
         }
@@ -222,13 +166,6 @@ const StorePage = () => {
         setAssignmentCode('')
         setProducts([])
         setCategories([])
-        setStatus({
-          tone: 'error',
-          text:
-            error instanceof Error
-              ? error.message
-              : "Assignment ma'lumotlarini yuklab bo'lmadi.",
-        })
       } finally {
         if (!cancelled) {
           setIsProductsLoading(false)
@@ -366,8 +303,7 @@ const StorePage = () => {
       quantity: '1',
     })
 
-  const updateCartItem = (product, nextQuantity, options = {}) => {
-    const { announce = false } = options
+  const updateCartItem = (product, nextQuantity) => {
     const quantity = clampQuantity(nextQuantity)
 
     setCart((currentCart) => {
@@ -386,13 +322,6 @@ const StorePage = () => {
       copy[existingIndex] = nextItem
       return copy
     })
-
-    if (announce) {
-      setStatus({
-        tone: 'success',
-        text: `${product.name} savatga ${quantity} ta qilib saqlandi.`,
-      })
-    }
   }
 
   const changeEditorQuantity = (value) => {
@@ -410,7 +339,7 @@ const StorePage = () => {
   }
 
   const saveEditorQuantity = (product) => {
-    updateCartItem(product, quantityEditor.quantity, { announce: true })
+    updateCartItem(product, quantityEditor.quantity)
     closeQuantityEditor()
   }
 
@@ -463,18 +392,10 @@ const StorePage = () => {
 
     if (Object.keys(nextErrors).length > 0) {
       setCustomerForm(normalizedCustomerForm)
-      setStatus({
-        tone: 'error',
-        text: "Buyurtmani yuborish uchun ism va telefonni to'g'ri kiriting.",
-      })
       return
     }
 
     if (!assignmentCode) {
-      setStatus({
-        tone: 'error',
-        text: 'Assignment code aniqlanmadi, buyurtma yuborilmadi.',
-      })
       return
     }
 
@@ -486,7 +407,7 @@ const StorePage = () => {
 
     try {
       setIsSubmitting(true)
-      const response = await submitAssignmentOrder(payload)
+      await submitAssignmentOrder(payload)
 
       window.localStorage.setItem(
         `new-tujjors-last-order-${assignmentCode}`,
@@ -498,25 +419,11 @@ const StorePage = () => {
       closeQuantityEditor()
       setCustomerForm(EMPTY_FORM)
       setTouchedFields({})
-      setStatus({
-        tone: 'success',
-        text:
-          response?.result?.message ||
-          response?.message ||
-          "Buyurtma muvaffaqiyatli yuborildi.",
-      })
-    } catch (error) {
+    } catch {
       window.localStorage.setItem(
         `new-tujjors-last-order-failed-${assignmentCode}`,
         JSON.stringify(payload),
       )
-
-      setStatus({
-        tone: 'error',
-        text: `${
-          error instanceof Error ? error.message : "Buyurtmani yuborib bo'lmadi."
-        } Nusxa brauzerda saqlandi.`,
-      })
     } finally {
       setIsSubmitting(false)
     }
@@ -524,18 +431,6 @@ const StorePage = () => {
 
   return (
     <main className="flex min-h-dvh flex-col overflow-hidden bg-app-bg">
-      {status && (
-        <div
-          className={`fixed top-4 right-4 z-50 w-[min(92vw,30rem)] rounded-lg border px-4 py-3 text-sm font-medium shadow-soft transition-all duration-300 ${
-            isToastVisible
-              ? 'translate-x-0 opacity-100'
-              : 'pointer-events-none translate-x-8 opacity-0'
-          } ${ToneClasses[status.tone]}`}
-        >
-          {status.text}
-        </div>
-      )}
-
       <StoreHeader
         categories={categories}
         products={products}
@@ -549,7 +444,7 @@ const StorePage = () => {
         onSelectCategory={selectCategory}
       />
 
-      <section className="mx-auto mt-24 flex w-full max-w-7xl min-h-0 flex-1 flex-col overflow-hidden px-4 py-4">
+      <section className="mx-auto mt-20 flex w-full max-w-7xl min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 md:mt-24">
         <div className="mb-4 flex shrink-0 items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-app-text">

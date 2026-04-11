@@ -137,39 +137,39 @@ const StoreHeader = ({
   return (
     <>
       <header className="shrink-0 fixed top-0 z-20 right-0 left-0 border-b border-app-border bg-app-surface">
-        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-3 px-4 py-4 md:flex-nowrap">
-          <div ref={categoryTriggerRef} className="w-full md:w-auto">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 md:flex md:flex-nowrap md:gap-3 md:px-4 md:py-4">
+          <div ref={categoryTriggerRef} className="w-auto">
             <button
               type="button"
               onClick={toggleCategoryMenu}
               aria-label="Open categories"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-app-surface text-app-text"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-app-surface text-app-text md:h-11 md:w-11 md:rounded-2xl"
             >
               <Menu size={18} />
             </button>
           </div>
 
-          <label className="relative w-full md:flex-1">
+          <label className="relative min-w-0 md:flex-1">
             <span className="sr-only">Qidirish</span>
             <Search
-              size={18}
-              className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-app-text-soft"
+              size={16}
+              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-app-text-soft md:left-4"
             />
             <input
               type="search"
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Nomi yoki bar kod"
-              className="w-full rounded-2xl border border-app-border bg-app-surface-muted py-3 pr-4 pl-11 text-sm text-app-text"
+              className="w-full rounded-xl border border-app-border bg-app-surface-muted py-2.5 pr-3 pl-9 text-sm text-app-text md:rounded-2xl md:py-3 md:pr-4 md:pl-11"
             />
           </label>
 
           <button
             type="button"
             onClick={onOpenCart}
-            className="inline-flex items-center gap-2 rounded-2xl bg-app-accent px-4 py-3 text-sm font-bold text-app-accent-contrast"
+            className="inline-flex h-10 items-center gap-1 rounded-xl bg-app-accent px-3 text-xs font-bold text-app-accent-contrast md:h-auto md:gap-2 md:rounded-2xl md:px-4 md:py-3 md:text-sm"
           >
-            <ShoppingCart size={18} />
+            <ShoppingCart size={16} />
             <span>Savat {totalItems > 0 ? `(${formatCount(totalItems)})` : ''}</span>
           </button>
         </div>
