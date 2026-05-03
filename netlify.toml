@@ -4,7 +4,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "http://45.94.209.80:8005/api/:splat"
+  to = "https://tujjors.uz/api/:splat"
   status = 200
   force = true
 
