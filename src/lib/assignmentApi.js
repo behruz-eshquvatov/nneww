@@ -1,9 +1,8 @@
 import heroImage from '../assets/hero.png'
 
-const ASSIGNMENT_API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
-const ASSIGNMENT_ENDPOINT_PREFIX = `${ASSIGNMENT_API_BASE_URL}/api/dealers/assignment/`
-const ASSIGNMENT_ORDER_ENDPOINT = `${ASSIGNMENT_API_BASE_URL}/api/dealers/assignment-order/`
+const ASSIGNMENT_API_BASE_URL = "https://tujjors.uz"
+const ASSIGNMENT_ENDPOINT_PREFIX = `https://tujjors.uz/api/dealers/assignment/`
+const ASSIGNMENT_ORDER_ENDPOINT = `https://tujjors.uz/api/dealers/assignment-order/`
 
 const compactText = (value) =>
   typeof value === 'string' ? value.trim() : ''
